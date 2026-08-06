@@ -45,19 +45,28 @@ setupSocketHandlers(io);
 
 // Connect to MongoDB and start server
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/alaeze';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 async function start() {
-  try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB');
-  } catch (err) {
-    console.log('MongoDB not available, running without database');
-  }
-
-  httpServer.listen(PORT, () => {
+  // Start the server first, then connect to DB
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Alaeze API running on port ${PORT}`);
   });
+
+  // Connect to MongoDB if URI is provided (non-blocking)
+  if (MONGODB_URI) {
+    try {
+      await mongoose.connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+      });
+      console.log('Connected to MongoDB');
+    } catch (err) {
+      console.log('MongoDB connection failed:', err.message);
+      console.log('Running with in-memory data store');
+    }
+  } else {
+    console.log('No MONGODB_URI set, running with in-memory data store');
+  }
 }
 
 start();
