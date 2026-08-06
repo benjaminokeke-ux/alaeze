@@ -1,6 +1,7 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "server/Dockerfile"
+watchPatterns = ["server/**"]
 
 [deploy]
 healthcheckPath = "/api/health"
