@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
@@ -12,24 +13,39 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear error when user starts typing again
+    if (error) setError('');
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    // Client-side validation with specific messages
+    if (!formData.name.trim()) {
+      setError('Please enter a display name.');
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setError('Please enter your email address.');
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match. Please re-enter your password.');
       return;
     }
 
@@ -38,7 +54,17 @@ export default function Register() {
       const user = await register(formData);
       navigate(formData.accountType === 'creator' ? '/creator' : '/home');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      // Map backend errors to user-friendly messages
+      const serverMsg = err.response?.data?.message;
+      if (serverMsg?.includes('already registered') || serverMsg?.includes('already exists')) {
+        setError('An account with this email already exists. Try signing in instead.');
+      } else if (serverMsg?.includes('password')) {
+        setError('Password must be at least 8 characters long.');
+      } else if (serverMsg) {
+        setError(serverMsg);
+      } else {
+        setError('Something went wrong. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -108,32 +134,52 @@ export default function Register() {
               <label htmlFor="password" className="block text-sm font-medium text-dark-300 mb-2">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="input-field"
-                placeholder="At least 8 characters"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="input-field pr-11"
+                  placeholder="At least 8 characters"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark-300 mb-2">
                 Confirm Password
               </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="input-field"
-                placeholder="Confirm your password"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="input-field pr-11"
+                  placeholder="Confirm your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
 
             {/* Account Type Toggle */}

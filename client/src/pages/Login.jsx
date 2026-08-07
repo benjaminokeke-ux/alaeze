@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -7,6 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -19,7 +21,14 @@ export default function Login() {
       const user = await login(email, password);
       navigate(user.accountType === 'creator' ? '/creator' : '/home');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid credentials');
+      const serverMsg = err.response?.data?.message;
+      if (serverMsg?.includes('Invalid')) {
+        setError('Incorrect email or password. Please try again.');
+      } else if (serverMsg) {
+        setError(serverMsg);
+      } else {
+        setError('Something went wrong. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -57,7 +66,7 @@ export default function Login() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (error) setError(''); }}
                 className="input-field"
                 placeholder="you@example.com"
                 required
@@ -68,15 +77,25 @@ export default function Login() {
               <label htmlFor="password" className="block text-sm font-medium text-dark-300 mb-2">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field"
-                placeholder="Enter your password"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); if (error) setError(''); }}
+                  className="input-field pr-11"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button
